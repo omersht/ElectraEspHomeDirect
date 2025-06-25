@@ -248,6 +248,7 @@ bool ElectraClimate::on_receive(remote_base::RemoteReceiveData data){
 
   active_mode_ = this->mode; // keep the active mode in sync
   this->publish_state(); // update HA
+  transmit_state(); // passes the state to the ac
   return true;
 
 }
