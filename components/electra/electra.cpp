@@ -9,6 +9,19 @@ static const char *const TAG = "electra.climate";
 climate::ClimateMode active_mode_;
 
 void ElectraClimate::setup() {
+  auto restore = this->restore_state_();
+  if (restore.has_value()) {
+    ESP_LOGI(TAG, "Restoring previous state");
+    restore->apply(this);  // Apply the restored state to the climate
+  } else {
+    ESP_LOGI(TAG, "No previous state found, setting defaults");
+    this->mode = climate::CLIMATE_MODE_OFF;
+    this->target_temperature = 25.0;
+    this->fan_mode = climate::CLIMATE_FAN_HIGH;
+    this->swing_mode = climate::CLIMATE_SWING_OFF;
+    this->preset = climate::CLIMATE_PRESET_NONE;
+  }
+
   climate_ir::ClimateIR::setup();
   active_mode_ = this->mode;
 }
