@@ -246,11 +246,11 @@ bool ElectraClimate::on_receive(remote_base::RemoteReceiveData data){
 
   this->target_temperature = (decode.temperature + 15); // temp
 
-  active_mode_ = this->mode; // keep the active mode in sync
-  this->publish_state(); // update HA
-  transmit_state(); // passes the state to the ac
-  return true;
+  transmit_state(); // transmit the state the ac
 
+  active_mode_ = this->mode; // keep the active mode in sync
+  this->publish_state(); // update HA 
+  return true;
 }
 // all fuanction from here down are helper fuanctions for decoding,
 
