@@ -190,16 +190,15 @@ bool ElectraClimate::on_receive(remote_base::RemoteReceiveData data){
   ElectraCode decode;
   decode = analyze_electra(data);
 
-  if (decode.num == 0) return false;
+  if (decode.num == 0)
+    return false;
 
-  if ((decode.power) == 1 && (this->mode != climate::CLIMATE_MODE_OFF)){ // if this is a power command, and the state is not off, turn off.
+  const auto previous_active_mode = active_mode_;
+
+  if (decode.power == 1 && this->mode != climate::CLIMATE_MODE_OFF) {
     this->mode = climate::CLIMATE_MODE_OFF;
-  }
-  else if ((decode.power != 1 ) && (this->mode == climate::CLIMATE_MODE_OFF)){ // if there is a state change while the ac is off
-    ESP_LOGD(TAG, "An change mode command was recived, but the ac is off");
-  }
-  else { // else, set the correct mode
-    switch (decode.mode) {// changes the mode to the received one
+  } else {
+    switch (decode.mode) {
       case IRElectraMode::IRElectraModeCool:
         this->mode = climate::CLIMATE_MODE_COOL;
         break;
@@ -215,10 +214,17 @@ bool ElectraClimate::on_receive(remote_base::RemoteReceiveData data){
       case IRElectraMode::IRElectraModeDry:
         this->mode = climate::CLIMATE_MODE_DRY;
         break;
+      case IRElectraMode::IRElectraModeOff:
+        if (supportsOff) {
+          this->mode = climate::CLIMATE_MODE_OFF;
+        }
+        break;
+      default:
+        break;
     }
   }
 
-  switch (decode.fan) {// changes the fan to the received one
+  switch (decode.fan) {
     case IRElectraFan::IRElectraFanLow:
       this->fan_mode = climate::CLIMATE_FAN_LOW;
       break;
@@ -233,26 +239,24 @@ bool ElectraClimate::on_receive(remote_base::RemoteReceiveData data){
       break;
   }
 
-  if (decode.swing == 1){ // swing
+  if (decode.swing == 1) {
     this->swing_mode = climate::CLIMATE_SWING_VERTICAL;
   } else {
     this->swing_mode = climate::CLIMATE_SWING_OFF;
   }
 
-  if (decode.sleep == 1)
-  {
+  if (decode.sleep == 1) {
     this->preset = climate::CLIMATE_PRESET_SLEEP;
   } else {
     this->preset = climate::CLIMATE_PRESET_NONE;
   }
-  
 
-  this->target_temperature = (decode.temperature + 15); // temp
+  this->target_temperature = (decode.temperature + 15);
 
-
-  active_mode_ = this->mode; // keep the active mode in sync
-  transmit_state(); // transmit the state the ac
-  this->publish_state(); // update HA 
+  active_mode_ = previous_active_mode;
+  transmit_state();
+  active_mode_ = this->mode;
+  this->publish_state();
   return true;
 }
 // all fuanction from here down are helper fuanctions for decoding,
