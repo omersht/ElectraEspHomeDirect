@@ -181,19 +181,19 @@ ElectraCode ElectraClimate::encode_electra(){
   return code;
 }
 
-bool ElectraClimate::on_receive(remote_base::RemoteReceiveData data){
+bool ElectraClimate::on_receive(remote_base::RemoteReceiveData data) {
   if (millis() - this->last_transmit_time_ < 500) {
     ESP_LOGV(TAG, "Blocked receive because of current trasmittion");
     return false;
   }
+
   data.set_tolerance((ELECTRA_TIME_UNIT / 2), esphome::remote_base::TOLERANCE_MODE_TIME);
-  ElectraCode decode;
-  decode = analyze_electra(data);
-
-  if (decode.num == 0)
+  ElectraCode decode = analyze_electra(data);
+  if (decode.num == 0) {
     return false;
+  }
 
-    const auto previous_active_mode = active_mode_;
+  const auto previous_active_mode = active_mode_;
 
   if (this->mode == climate::CLIMATE_MODE_OFF && decode.power != 1) {
     ESP_LOGD(TAG, "Mode change received while AC is off; ignoring until power command arrives");
@@ -257,7 +257,6 @@ bool ElectraClimate::on_receive(remote_base::RemoteReceiveData data){
   }
 
   switch (decode.fan) {
-switch (decode.fan) {
     case IRElectraFan::IRElectraFanLow:
       this->fan_mode = climate::CLIMATE_FAN_LOW;
       break;
@@ -272,18 +271,8 @@ switch (decode.fan) {
       break;
   }
 
-  if (decode.swing == 1) {
-    this->swing_mode = climate::CLIMATE_SWING_VERTICAL;
-  } else {
-    this->swing_mode = climate::CLIMATE_SWING_OFF;
-  }
-
-  if (decode.sleep == 1) {
-    this->preset = climate::CLIMATE_PRESET_SLEEP;
-  } else {
-    this->preset = climate::CLIMATE_PRESET_NONE;
-  }
-
+  this->swing_mode = decode.swing == 1 ? climate::CLIMATE_SWING_VERTICAL : climate::CLIMATE_SWING_OFF;
+  this->preset = decode.sleep == 1 ? climate::CLIMATE_PRESET_SLEEP : climate::CLIMATE_PRESET_NONE;
   this->target_temperature = (decode.temperature + 15);
 
   active_mode_ = previous_active_mode;
@@ -292,7 +281,7 @@ switch (decode.fan) {
   this->publish_state();
   return true;
 }
-// all fuanction from here down are helper fuanctions for decoding,
+// all functions from here down are helper functions for decoding.
 
 ElectraCode ElectraClimate::decode_electra(remote_base::RemoteReceiveData data){ // this function recives a mark header-less data(the header space is not stript away, it can be 1 of 2 things) and decodes it.
 
