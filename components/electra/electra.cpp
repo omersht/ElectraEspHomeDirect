@@ -193,10 +193,42 @@ bool ElectraClimate::on_receive(remote_base::RemoteReceiveData data){
   if (decode.num == 0)
     return false;
 
-  const auto previous_active_mode = active_mode_;
+    const auto previous_active_mode = active_mode_;
 
-  if (decode.power == 1 && this->mode != climate::CLIMATE_MODE_OFF) {
-    this->mode = climate::CLIMATE_MODE_OFF;
+  if (this->mode == climate::CLIMATE_MODE_OFF && decode.power != 1) {
+    ESP_LOGD(TAG, "Mode change received while AC is off; ignoring until power command arrives");
+    return false;
+  }
+
+  if (decode.power == 1) {
+    if (this->mode == climate::CLIMATE_MODE_OFF) {
+      switch (decode.mode) {
+        case IRElectraMode::IRElectraModeCool:
+          this->mode = climate::CLIMATE_MODE_COOL;
+          break;
+        case IRElectraMode::IRElectraModeHeat:
+          this->mode = climate::CLIMATE_MODE_HEAT;
+          break;
+        case IRElectraMode::IRElectraModeFan:
+          this->mode = climate::CLIMATE_MODE_FAN_ONLY;
+          break;
+        case IRElectraMode::IRElectraModeAuto:
+          this->mode = climate::CLIMATE_MODE_HEAT_COOL;
+          break;
+        case IRElectraMode::IRElectraModeDry:
+          this->mode = climate::CLIMATE_MODE_DRY;
+          break;
+        case IRElectraMode::IRElectraModeOff:
+          if (supportsOff) {
+            this->mode = climate::CLIMATE_MODE_OFF;
+          }
+          break;
+        default:
+          break;
+      }
+    } else {
+      this->mode = climate::CLIMATE_MODE_OFF;
+    }
   } else {
     switch (decode.mode) {
       case IRElectraMode::IRElectraModeCool:
@@ -225,6 +257,7 @@ bool ElectraClimate::on_receive(remote_base::RemoteReceiveData data){
   }
 
   switch (decode.fan) {
+switch (decode.fan) {
     case IRElectraFan::IRElectraFanLow:
       this->fan_mode = climate::CLIMATE_FAN_LOW;
       break;
